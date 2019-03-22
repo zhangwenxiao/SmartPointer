@@ -1,7 +1,7 @@
 #include <iostream>
 #include "smartpointer.h"
 
-class SomeClass: public RefBase {
+class SomeClass {
 public:
     SomeClass()
     {
@@ -20,7 +20,7 @@ public:
     }
 };
 
-class OtherClass: public RefBase {
+class OtherClass {
 public:
     OtherClass()
     {

@@ -1,2 +1,2 @@
-### SmartPointer
-* 用C++实现智能指针
+## SmartPointer
+- 模仿shared\_ptr，用C++实现智能指针

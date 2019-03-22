@@ -1,98 +1,80 @@
-#ifndef __SMARTPOINTER_H_
-#define __SMARTPOINTER_H_
+#ifndef __SMART_POINTER_H__
+#define __SMART_POINTER_H__
 
-#define COMPARE(__op__)                            \
-bool operator __op__ (const SmartPointer& o) const \
-{                                                  \
-    return mPointer __op__ o.mPointer;             \
-}                                                  \
-bool operator __op__ (const T* o) const            \
-{                                                  \
-    return mPointer __op__ o;                      \
-}                                                  \
+#define COMPARE(__op__)                                         \
+bool operator __op__ (const SmartPointer& o) const              \
+{                                                               \
+    return counter_ -> getPtr() __op__ o.counter_ -> getPtr();  \
+}                                                               \
+bool operator __op__ (const T* o) const                         \
+{                                                               \
+    return counter_ -> getPtr() __op__ o;                       \
+}                                                               \
 
-template <typename T>
+template<typename T>
+class Counter {
+public:
+    Counter()
+    {
+        ptr_ = nullptr;
+        cnt_ = 0;
+    }
+
+    Counter(T* p)
+    {
+        ptr_ = p;
+        cnt_ = 1;
+    }
+
+    ~Counter() { delete ptr_; }
+
+    void addCnt() { ++cnt_; }
+    void decCnt() { --cnt_; }
+    int getCnt() const { return cnt_; }
+
+    T* getPtr() const { return ptr_; }
+
+private:
+    T* ptr_;
+    int cnt_;
+};
+
+template<typename T>
 class SmartPointer {
 public:
-    // 构造函数
-    SmartPointer() : mPointer(NULL) // 默认构造函数
+    SmartPointer(T* p) { counter_ = new Counter<T>(p); }
+
+    SmartPointer(const SmartPointer& sp)
     {
-        std::cout << "create unknown smart pointer." << std::endl;
+        counter_ = sp.counter_;
+        counter_ -> addCnt();
     }
 
-    SmartPointer(T* p) : mPointer(p) // 接收指定类型的指针参数
+    SmartPointer& operator=(const SmartPointer& sp)
     {
-        std::cout << "create smart pointer at " 
-            << static_cast<const void*>(p) << std::endl;
-
-        if(mPointer) mPointer -> incRefCount();
-    }
-
-    // 拷贝构造函数
-    SmartPointer(const SmartPointer& other) 
-        : mPointer(other.mPointer)
-    {
-        std::cout << "Copy smart pointer at " 
-            << static_cast<const void*>(other.mPointer) 
-            << std::endl;
-
-        if(mPointer) mPointer -> incRefCount();
-    }
-    // 赋值操作符
-    SmartPointer& operator = (const SmartPointer& other)
-    {
-        T* temp = other.mPointer;
-        if(temp) temp -> incRefCount();
-
-        if(mPointer && mPointer -> decRefCount() == 0) 
-            delete mPointer;
-
-        mPointer = temp;
+        counter_ -> decCnt();
+        if(counter_ -> getCnt() == 0)
+            delete counter_;
+        counter_ = sp.counter_;
+        counter_ -> addCnt();
         return *this;
     }
 
-    // 析构函数
     ~SmartPointer()
     {
-        std::cout << "release smart pointer at " 
-            << static_cast<const void*>(mPointer) << std::endl;
-
-        if(mPointer && mPointer -> decRefCount() == 0) 
-            delete mPointer;
+        counter_ -> decCnt();
+        if(counter_ -> getCnt() == 0)
+            delete counter_;
     }
 
-    T& operator* () const { return *mPointer; }
-    T* operator -> () const { return mPointer; }
+    T& operator*() const { return *(counter_ -> getPtr()); }
+    T* operator->() const { return counter_ -> getPtr(); }
 
     COMPARE(==);
     COMPARE(!=);
 
 private:
-    T* mPointer; // 指向智能指针实际对应的内存资源
+    Counter<T>* counter_;
 };
 
-class RefBase {
-public:
-    RefBase() : mCount(0) {}
-
-    void incRefCount()
-    {
-        mCount++;
-    }
-    int decRefCount()
-    {
-        return --mCount;
-    }
-    //调试接口，返回对象当前引用计数
-    int getRefCount()
-    {
-        return mCount;
-    }
-
-    virtual ~RefBase() {}
-
-private:
-    int mCount;
-};
-
-#endif // __SMARTPOINTER_H_
+#endif
